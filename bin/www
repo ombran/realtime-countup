@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+var debug = require('debug')('generated-express-app');
+var app = require('../app');
+
+app.set('port', process.env.PORT || 3000);
+
+var server = app.listen(app.get('port'), function() {
+  debug('Express server listening on port ' + server.address().port);
+});
+
+var io = require('socket.io').listen(server);
+
+var count = [];
+
+// クライアントが接続してきたときの処理
+io.sockets.on('connection', function(socket) {
+  console.log("connection");
+
+  // メッセージを受けたときの処理
+  socket.on('message', function(data) {
+    if (count.indexOf(data.uuid) < 0) {
+      count.push(data.uuid);
+    }
+
+    // つながっているクライアント全員に送信
+    console.log("message");
+    console.log(count.length);
+    console.log(data.uuid);
+    io.sockets.emit('result', { value: count.length });
+  });
+
+  socket.on('countreset', function(data) {
+    count = [];
+    io.sockets.emit('result', { value: count.length });
+  });
+
+
+  // クライアントが切断したときの処理
+  socket.on('disconnect', function(){
+    console.log("disconnect");
+  });
+});
+// add end
